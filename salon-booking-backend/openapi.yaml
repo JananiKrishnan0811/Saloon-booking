@@ -1,0 +1,303 @@
+openapi: 3.0.3
+info:
+  title: Salon Booking API
+  version: "1.0.0"
+  description: API for the Salon & Beauty Booking Platform (web + mobile)
+servers:
+  - url: http://localhost:5000/api
+    description: Local development server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [customer, owner, admin]
+        createdAt:
+          type: string
+          format: date-time
+      required: [email, role]
+    AuthRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    Salon:
+      type: object
+      properties:
+        _id: { type: string }
+        name: { type: string }
+        address: { type: string }
+        description: { type: string }
+        owner: { type: string }
+        services:
+          type: array
+          items: { type: string }
+    Service:
+      type: object
+      properties:
+        _id: { type: string }
+        salon: { type: string }
+        name: { type: string }
+        price: { type: number }
+        duration: { type: integer, description: 'minutes' }
+    Staff:
+      type: object
+      properties:
+        _id: { type: string }
+        salon: { type: string }
+        name: { type: string }
+        services:
+          type: array
+          items: { type: string }
+    Availability:
+      type: object
+      properties:
+        _id: { type: string }
+        staff: { type: string }
+        dayOfWeek:
+          type: string
+          description: 'mon,tue,...'
+        startTime: { type: string, example: '09:00' }
+        endTime: { type: string, example: '17:00' }
+    Appointment:
+      type: object
+      properties:
+        _id: { type: string }
+        customer: { type: string }
+        salon: { type: string }
+        service: { type: string }
+        staff: { type: string }
+        appointmentDate: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        status:
+          type: string
+          enum: [booked, confirmed, cancelled, completed]
+        price: { type: number }
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                role:
+                  type: string
+                  enum: [customer, owner]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/login:
+    post:
+      summary: Login and receive JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /salons:
+    get:
+      summary: List salons
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Salon'
+    post:
+      summary: Create a salon (owner/admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Salon'
+      responses:
+        '201':
+          description: Created
+  /salons/{id}:
+    get:
+      summary: Get salon details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Salon'
+  /services:
+    get:
+      summary: List services (optionally filter by salon)
+      parameters:
+        - in: query
+          name: salon
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+  /staff:
+    get:
+      summary: List staff (filter by salon)
+      parameters:
+        - in: query
+          name: salon
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /availability/staff/{staffId}:
+    get:
+      summary: Get staff availability
+      parameters:
+        - in: path
+          name: staffId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Availability'
+  /appointments:
+    post:
+      summary: Create appointment (customer)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                salon: { type: string }
+                service: { type: string }
+                staff: { type: string }
+                appointmentDate: { type: string, format: date }
+                startTime: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '409':
+          description: Conflict (overlapping booking)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get appointments for current user (customer)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+  /appointments/{id}/cancel:
+    put:
+      summary: Cancel an appointment (customer)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancelled
+  /admin/users:
+    get:
+      summary: List users (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+security:
+  - bearerAuth: []

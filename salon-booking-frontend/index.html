@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Salon Booking</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; background: #f4f7fb; color: #172033; }
+      /* Modal styles */
+      .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 50; }
+      .modal { background: white; border-radius: 12px; padding: 20px; max-width: 800px; width: 90%; max-height: 80vh; overflow: auto; }
+      .modal .close { float: right; background: transparent; border: none; font-size: 18px; cursor: pointer; }
+      .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+      .section { background: white; border: 1px solid #e6ebf2; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(23, 32, 51, 0.05); }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      input, select, button { width: 100%; padding: 10px; margin-top: 8px; }
+      button { background: #8b5cf6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+      .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; margin-top: 12px; }
+      .hidden { display: none; }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 18px 0 26px; }
+      .stat-box { background: #f7f9fc; border: 1px solid #e1e8f0; padding: 16px; border-radius: 12px; text-align: left; cursor: pointer; transition: transform .2s, box-shadow .2s, border-color .2s; }
+      .stat-box:hover, .stat-box.active { transform: translateY(-2px); border-color: #2563eb; box-shadow: 0 8px 18px rgba(37, 99, 235, .14); }
+      .stat-box strong { display: block; color: #172033; font-size: 1.7rem; }
+      .stat-box span { display: block; color: #667085; margin-top: 5px; text-transform: capitalize; }
+      .dashboard-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #edf0f5; padding-bottom: 14px; }
+      .dashboard-toolbar p { color: #667085; margin: 0; }
+      .dashboard-panel { display: none; }
+      .dashboard-panel.active { display: block; }
+      .dashboard-panel h3 { margin: 22px 0 10px; color: #172033; }
+      .dashboard-item { background: #fff; border: 1px solid #e1e8f0; border-left: 4px solid #2563eb; border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+      .dashboard-item h4 { margin: 0 0 7px; }
+      .dashboard-item p { margin: 5px 0; color: #667085; }
+      @media (max-width: 640px) { .dashboard-toolbar { align-items: flex-start; flex-direction: column; } }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+
+      <div class="section" id="authSection">
+        <h2>Login / Register</h2>
+        <div class="grid">
+          <div>
+            <input id="name" placeholder="Name" />
+            <input id="email" placeholder="Email" />
+            <input id="password" type="password" placeholder="Password" />
+            <select id="role">
+              <option value="customer">Customer</option>
+              <option value="salon_owner">Salon Owner</option>
+            </select>
+            <button id="registerBtn">Register</button>
+            <button id="loginBtn">Login</button>
+            <div id="authMessage"></div>
+          </div>
+
+          <div>
+            <h3>Current user</h3>
+            <p id="userInfo">Not logged in</p>
+            <button id="logoutBtn" class="hidden">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="discoverSection">
+        <h2>Discover salons</h2>
+        <div class="grid">
+          <div>
+            <label for="searchType">Search by</label>
+            <select id="searchType">
+              <option value="salon">Salon</option>
+              <option value="service">Service</option>
+            </select>
+          </div>
+          <div>
+            <label for="searchInput">Salon or service</label>
+            <select id="searchInput">
+              <option value="">Select a salon</option>
+            </select>
+          </div>
+          <div>
+            <label for="cityInput">City</label>
+            <input id="cityInput" placeholder="City" value="Salem" readonly />
+          </div>
+        </div>
+        <button id="searchBtn">Search</button>
+        <p id="searchStatus" class="message"></p>
+        <div id="salonList" class="salon-list"></div>
+      </div>
+
+      <div class="section" id="quickBookingSection">
+        <h2>Quick Booking (Salem)</h2>
+        <div class="grid">
+          <div>
+            <label for="quickSalonSelect">Salon</label>
+            <select id="quickSalonSelect"><option value="">Loading salons...</option></select>
+          </div>
+          <div>
+            <label for="quickServiceSelect">Service</label>
+            <select id="quickServiceSelect"><option value="">Select salon first</option></select>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label for="quickStaffSelect">Stylist</label>
+            <select id="quickStaffSelect">
+                <option value="">Select stylist</option>
+                <option value=""> Reena</option>
+                <option values="">Janu</option>
+                <option values="">Shiva</option>
+              </select>
+            
+          </div>
+          <div>
+            <label for="quickBookingDate">Date</label>
+            <input id="quickBookingDate" type="date" />
+          </div>
+        </div>
+        <div class="grid">
+          <div>
+            <label for="quickSlotSelect">Duration</label>
+            <select id="quickSlotSelect"><option value="">Select time slot</option></select>
+          </div>
+          <div>
+            <button id="quickBookBtn">Quick Book</button>
+          </div>
+        </div>
+        <div id="quickBookingMessage"></div>
+        <div id="quickBookingConfirmation" class="hidden"></div>
+      </div>
+
+      <div class="modal-overlay" id="salonModal">
+        <div class="modal" role="dialog" aria-modal="true">
+          <button class="close" id="closeSalonModal">✕</button>
+          <div id="salonDetailsSection">
+            <h2 id="salonName"></h2>
+            <p id="salonAddress"></p>
+            <p id="salonCity"></p>
+            <div>
+              <strong>Stylists:</strong>
+              <div id="stylistList"><span>Loading stylists...</span></div>
+            </div>
+
+            <div id="serviceList"></div>
+
+            <div class="hidden" id="bookingSection">
+              <h3>Book appointment</h3>
+
+              <label for="modalStaffSelect">Stylist name</label>
+              <select id="modalStaffSelect">
+                <option value="">Select stylist</option>
+              </select>
+
+              <input type="date" id="bookingDate" />
+
+              <select id="slotSelect">
+                <option value="">Select time slot</option>
+              </select>
+
+              <button id="bookBtn">Book Appointment</button>
+              <div id="bookingMessage"></div>
+              <div id="bookingConfirmation" class="hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section hidden" id="adminDashboard">
+        <div class="dashboard-toolbar">
+          <div><h2>Admin dashboard</h2><p>Manage salon operations and booking activity.</p></div>
+          <span class="message">Administrator</span>
+        </div>
+        <div class="stats" id="adminStats"></div>
+        <div id="adminSalonData"></div>
+      </div>
+
+      <div class="section hidden" id="salonDashboard">
+        <h2>Salon dashboard</h2>
+        <div class="stats" id="salonStats"></div>
+        <div id="ownerSalonData"></div>
+      </div>
+
+      <!-- Only show Login/Register and Discover sections on the root page -->
+      <!-- Additional dashboards and booking history removed for simplified root view -->
+    </div>
+
+    <script src="script.js?v=4"></script>
+  </body>
+</html>
